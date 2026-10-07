@@ -46,8 +46,8 @@ void GPIO_Clear(void)
 void GPIO_Toggle(void)
 {
     GPIOC_ODR ^= (1U << LED_PIN);
-}
 
+}
 
 uint8_t GPIO_Read(void)
 {
