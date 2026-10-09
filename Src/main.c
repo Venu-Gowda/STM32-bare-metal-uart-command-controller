@@ -5,17 +5,27 @@
 
 int main(void)
 {
+    char received;
+    uint32_t previous_led_time = 0U;
+
     Clock_Init();
     GPIO_Init();
     UART_Init();
     SysTick_Init();
 
-    UART_SendString("UART Interrupt Ready\r\n");
+    UART_SendString("UART RX Buffer Ready\r\n");
 
     while (1)
     {
-        GPIO_Toggle();
+        if (UART_TryReadChar(&received))
+        {
+            UART_SendChar(received);
+        }
 
-        delay_ms(2000);
+        if ((uint32_t)(millis() - previous_led_time) >= 2000U)
+        {
+            previous_led_time = millis();
+            GPIO_Toggle();
+        }
     }
 }

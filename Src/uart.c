@@ -7,6 +7,13 @@
 #include "uart.h"
 #include "stm32f103_regs.h"
 
+#define UART_RX_BUFFER_SIZE 64U
+
+static volatile char rx_buffer[UART_RX_BUFFER_SIZE];
+static volatile uint8_t rx_head = 0U;
+static volatile uint8_t rx_tail = 0U;
+static volatile uint32_t rx_dropped = 0U;
+
 void UART_Init(void)
 {
     /* Enable GPIOA clock */
@@ -83,11 +90,32 @@ void USART1_IRQHandler(void)
 {
     if (USART1_SR & (1U << 5))
     {
-        char c;
+        char c = (char)USART1_DR;
 
-        c = (char)USART1_DR;
+        uint8_t next = (rx_head + 1U) % UART_RX_BUFFER_SIZE;
 
-        UART_SendChar(c);
+        if (next != rx_tail)
+        {
+            rx_buffer[rx_head] = c;
+            rx_head = next;
+        }
+        else
+        {
+            rx_dropped++;
+        }
     }
 }
 
+uint8_t UART_TryReadChar(char *data)
+{
+    if (rx_head == rx_tail)
+    {
+        return 0U;  /* Buffer empty */
+    }
+
+    *data = rx_buffer[rx_tail];
+
+    rx_tail = (rx_tail + 1U) % UART_RX_BUFFER_SIZE;
+
+    return 1U;      /* Character received */
+}

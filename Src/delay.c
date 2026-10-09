@@ -7,21 +7,33 @@
 #include "delay.h"
 #include "stm32f103_regs.h"
 
+static volatile uint32_t tick_ms = 0U;
+
 void SysTick_Init(void)
 {
     SYST_RVR = 72000U - 1U;
     SYST_CVR = 0U;
 
-    SYST_CSR = (1U << 2) | (1U << 0);
+    /* Enable SysTick interrupt, processor clock, and counter. */
+    SYST_CSR = (1U << 2) | (1U << 1) | (1U << 0);
+}
+
+void SysTick_Handler(void)
+{
+    tick_ms++;
+}
+
+uint32_t millis(void)
+{
+    return tick_ms;
 }
 
 void delay_ms(uint32_t ms)
 {
-    while (ms--)
+    uint32_t start = millis();
+
+    while ((uint32_t)(millis() - start) < ms)
     {
-        while ((SYST_CSR & (1U << 16)) == 0U)
-        {
-        }
     }
 }
 
