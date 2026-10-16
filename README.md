@@ -1,100 +1,121 @@
 # STM32 UART Command Controller
 
-Bare-metal firmware for **STM32F103C8T6 (Blue Pill)** written in **Embedded C with no HAL and no CubeMX** — direct register manipulation using a custom register map. The firmware implements a UART command-line interface over USART1, with interrupt-driven receive, a ring buffer, and a line-based command parser.
+Bare-metal firmware for the **STM32F103C8T6 Blue Pill**, written in Embedded C without HAL or CubeMX-generated peripheral code. This project uses direct register-level programming to implement UART communication, interrupt-driven reception, a ring buffer, and a command parser to control the onboard LED.
 
 **Author:** Venu S  
-**MCU:** STM32F103C8T6 (ARM Cortex-M3 @ 72 MHz)  
-**Toolchain:** STM32CubeIDE, GCC ARM  
-**Status:** 🚧 In Development — UART Command Controller stage complete
+**Microcontroller:** STM32F103C8T6 (ARM Cortex-M3)  
+**IDE:** STM32CubeIDE  
+**Compiler:** ARM GCC  
+**UART:** USART1, 9600 baud  
+**Development status:** UART command controller implemented; hardware verification in progress.
 
----
+## Project Goals
 
-## 🎯 Project Goals
+- Learn bare-metal Embedded C and memory-mapped peripheral registers.
+- Configure the system clock and GPIO without HAL.
+- Implement UART transmission and interrupt-driven reception.
+- Use a ring buffer to separate interrupt handling from command processing.
+- Build a modular, line-based command parser.
+- Handle unknown commands, command overflow, and receive-buffer data loss.
+- Develop a foundation for future sensor-monitoring firmware.
 
-- Write **register-level firmware** without HAL or LL libraries
-- Implement clean, modular drivers for each peripheral
-- Build an **event-driven architecture** using interrupts, ring buffers, and a command parser
-- Demonstrate understanding of ARM Cortex-M3 architecture, memory-mapped I/O, and linker scripts
-- Serve as a reference implementation for bare-metal embedded development
+## Features
 
----
+| Feature | Status |
+|---|---|
+| GPIO driver for onboard LED | ✅ Complete |
+| HSE and PLL clock configuration | ✅ Complete |
+| USART1 transmission | ✅ Complete |
+| USART1 interrupt-driven reception | ✅ Complete |
+| UART receive ring buffer | ✅ Complete |
+| Line-based command parser | ✅ Complete |
+| `LED ON` and `LED OFF` commands | ✅ Complete |
+| Unknown-command handling | ✅ Complete |
+| Command-length overflow handling | ✅ Complete |
+| UART data-loss recovery | ✅ Complete |
+| Physical-board verification | ✅ Complete |ned |
+| Additional commands | Planned |
 
-## 🗺 Development Roadmap
+## System Architecture
 
-| # | Feature | Status | Notes |
-|---|---------|--------|-------|
-| 1 | GPIO Driver | ✅ Complete | PC13 LED (active-low) |
-| 2 | Clock Configuration | ✅ Complete | HSE → PLL → 72 MHz SYSCLK |
-| 3 | UART TX | ✅ Complete | USART1 @ 9600 bps, PA9 |
-| 4 | UART RX | ✅ Complete | PA10, interrupt-driven |
-| 5 | UART Interrupts | ✅ Complete | RXNE ISR on NVIC |
-| 6 | Ring Buffer | ✅ Complete | 64-byte, decouples ISR from main loop |
-| 7 | Command Parser | ✅ Complete | Line-terminated, validates input |
-| 8 | LED Command Interface | ✅ Complete | `LED ON` / `LED OFF` with ack |
-| 9 | Error Handling | ✅ Complete | Unknown cmd, overflow, data-loss recovery |
-| 10 | Timer (TIM2) | ⏳ Planned | Periodic interrupt |
-| 11 | ADC | ⏳ Planned | Sensor monitoring (future stage) |
-| 12 | Additional Commands | ⏳ Planned | `HELP`, `STATUS`, `RESET` |
-
----
-
-## 🏗 System Architecture
+```text
 Computer / Serial Terminal
-↓ sends "LED ON" / "LED OFF"
-USART1 Driver (PA10 RX, PA9 TX)
-↓
-UART RX Interrupt (RXNE)
-↓ stores byte
-Ring Buffer (64 bytes, lock-free)
-↓
-Main Loop → Command Parser
-↓ recognizes \n-terminated commands
-GPIO Driver (PC13)
-↓
-UART Response → back to terminal
+          |
+          | UART commands
+          v
+       USART1
+     PA10 RX / PA9 TX
+          |
+          v
+  UART Receive Interrupt
+   USART1_IRQHandler()
+          |
+          v
+    Receive Ring Buffer
+          |
+          v
+        main()
+          |
+          v
+    Command Parser
+          |
+          v
+      GPIO Driver
+          |
+          v
+    Onboard LED (PC13)
+          |
+          v
+   UART Response to PC
+```
 
----
+The UART interrupt stores incoming characters in the ring buffer. The main loop retrieves them and passes them to the command parser. The parser executes recognized commands and sends responses through UART.
 
-## 🔌 Pin Connections
+## Hardware Connections
 
-| STM32 Pin | Function | Connected To |
-|-----------|----------|--------------|
-| PC13 | GPIO Output | Onboard LED (active-low) |
-| PA9 | USART1_TX | USB-UART RX |
-| PA10 | USART1_RX | USB-UART TX |
-| GND | Ground | USB-UART GND (common) |
-| PA13 (SWDIO) | SWD Data | ST-Link V2 |
-| PA14 (SWCLK) | SWD Clock | ST-Link V2 |
+| STM32 Pin | Function | Connection |
+|---|---|---|
+| PC13 | GPIO output | Onboard LED, active-low |
+| PA9 | USART1 TX | USB-to-UART adapter RX |
+| PA10 | USART1 RX | USB-to-UART adapter TX |
+| GND | Ground | USB-to-UART adapter GND |
+| PA13 | SWDIO | ST-LINK V2 SWDIO |
+| PA14 | SWCLK | ST-LINK V2 SWCLK |
+| GND | Ground | ST-LINK GND |
 
----
+Use a 3.3 V-compatible UART adapter. Connect TX to RX and RX to TX, and ensure the devices share a ground.
 
-## ⚙️ Clock Configuration
+## Clock Configuration
 
-| Clock | Source | Frequency |
-|-------|--------|-----------|
+The firmware configures the STM32 clock using an 8 MHz external high-speed oscillator (HSE) and a PLL multiplier of 9.
+
+| Clock | Configuration | Frequency |
+|---|---|---:|
 | HSE | External crystal | 8 MHz |
 | PLL | HSE × 9 | 72 MHz |
 | SYSCLK | PLL output | 72 MHz |
-| AHB | SYSCLK | 72 MHz |
+| AHB / HCLK | SYSCLK / 1 | 72 MHz |
 | APB1 | AHB / 2 | 36 MHz |
 | APB2 | AHB / 1 | 72 MHz |
 
----
+USART1 is connected to APB2. Its baud-rate register is configured for 9600 baud using a 72 MHz peripheral clock.
 
-## 💻 Command Interface
+## UART Command Interface
 
-The firmware exposes a UART command-line interface over USART1 @ 9600 bps.
+The firmware supports the following commands through a serial terminal.
 
-### Supported Commands
+| Input | Action | Response |
+|---|---|---|
+| `LED ON` | Turn the onboard LED on | `LED is ON` |
+| `LED OFF` | Turn the onboard LED off | `LED is OFF` |
+| Any unsupported command | Reject the command | `Unknown command` |
+| Command exceeding buffer capacity | Reject the command | `Error: Command too long` |
 
-| Command | Action | Response |
-|---------|--------|----------|
-| `LED ON` | Turn PC13 LED on | `LED is ON` |
-| `LED OFF` | Turn PC13 LED off | `LED is OFF` |
-| Unknown | Reject | `Unknown command` |
-| Too long | Reject | `Error: Command too long` |
+Commands are terminated by a newline character. The parser ignores carriage returns, allowing it to work with common terminal line-ending settings.
 
-### Example Session
+### Example Terminal Session
+
+```text
 UART Command Parser Ready
 
 LED ON
@@ -105,65 +126,125 @@ LED is OFF
 
 HELLO
 Unknown command
-
-text
-
-### What Happens When You Type `LED ON`
-
-1. Computer sends characters over serial
-2. USART1 receives each character on PA10
-3. RXNE interrupt fires — `USART1_IRQHandler()` reads `USART1_DR` and stores byte in ring buffer
-4. `main()` calls `UART_GetNextEvent()` to retrieve received characters
-5. `CommandParser_Update()` collects characters until `\n`
-6. `ProcessCommand()` compares against `"LED ON"`
-7. `GPIO_Set()` drives PC13 low → LED on
-8. `UART_SendString()` sends `LED is ON` back to terminal
-
----
-
-## 🧱 Register-Level Programming
-
-This project intentionally avoids HAL and LL libraries. Instead, it uses:
-
-- **Custom register map** (`stm32f103_regs.h`) — struct-based access to memory-mapped peripherals
-- **Bitwise operations** — configure specific bits without affecting others
-- **Manual clock gating** — RCC register configuration
-
-### Example — Enable GPIOC clock and configure PC13 as output
-
-```c
-// Enable GPIOC clock (RCC_APB2ENR bit 4)
-RCC->APB2ENR |= (1 << 4);
-
-// Configure PC13 as output (2 bits per pin in CRH)
-GPIOC->CRH &= ~(0xF << 20);     // Clear PC13 config
-GPIOC->CRH |=  (0x2 << 20);     // Output push-pull, 2 MHz
 ```
-## Example — USART1 initialization for 9600 bps @ 72 MHz
+
+## How `LED ON` Works
+
+1. The computer sends `LED ON` through the serial adapter.
+2. USART1 receives the characters on PA10.
+3. The RXNE interrupt triggers when a received character is ready.
+4. `USART1_IRQHandler()` reads the data register and stores the character in the receive ring buffer.
+5. The main loop calls `UART_GetNextEvent()` to retrieve characters.
+6. `CommandParser_Update()` collects characters until a newline is received.
+7. `ProcessCommand()` compares the completed command with `LED ON`.
+8. `GPIO_Set()` drives PC13 low, turning on the active-low LED.
+9. `UART_SendString()` sends `LED is ON` back to the terminal.
+
+## Register-Level Programming
+
+This project avoids HAL and LL peripheral drivers. Peripheral configuration is performed using memory-mapped registers, bitwise operations, and explicit clock control.
+
+The current source uses a custom register header, `stm32f103_regs.h`, to access STM32 registers.
+
+### Example: Configure PC13 as an Output
+
 ```c
-// Enable USART1 clock (RCC_APB2ENR bit 14)
-RCC->APB2ENR |= (1 << 14);
+/* Enable the GPIOC peripheral clock */
+RCC_APB2ENR |= (1U << 4);
 
-// Enable GPIOA clock for PA9/PA10
-RCC->APB2ENR |= (1 << 2);
+/* Configure PC13 as a 10 MHz push-pull output */
+GPIOC_CRH &= ~(0xFU << 20);
+GPIOC_CRH |=  (0x1U << 20);
+```
 
-// Configure PA9 as alternate function push-pull (TX)
-GPIOA->CRH &= ~(0xF << 4);
-GPIOA->CRH |=  (0xB << 4);      // AF output, 50 MHz
+PC13 is the onboard LED pin on the Blue Pill. The LED is active-low: driving the pin low turns it on, and driving it high turns it off.
 
-// Configure PA10 as input floating (RX)
-GPIOA->CRH &= ~(0xF << 8);
-GPIOA->CRH |=  (0x4 << 8);      // Input floating
+### Example: Configure USART1 Pins
 
-// Set baud rate: USARTDIV = 72000000 / (16 * 9600) = 468.75
-USART1->BRR = (468 << 4) | 12;
+```c
+/* Enable GPIOA and USART1 clocks */
+RCC_APB2ENR |= (1U << 2);
+RCC_APB2ENR |= (1U << 14);
 
-// Enable USART1: TX (TE), RX (RE), RXNE interrupt, USART enable
-USART1->CR1 |= (1 << 3);        // TE: Transmitter enable
-USART1->CR1 |= (1 << 2);        // RE: Receiver enable
-USART1->CR1 |= (1 << 5);        // RXNEIE: RX interrupt enable
-USART1->CR1 |= (1 << 13);       // UE: USART enable
+/* PA9: Alternate-function push-pull output */
+GPIOA_CRH &= ~(0xFU << 4);
+GPIOA_CRH |=  (0xBU << 4);
 
-// Enable USART1 IRQ in NVIC (IRQ number 37)
-NVIC->ISER[1] |= (1 << (37 - 32));
+/* PA10: Floating input */
+GPIOA_CRH &= ~(0xFU << 8);
+GPIOA_CRH |=  (0x4U << 8);
+```
 
+The firmware configures USART1 for 9600 baud, enables the transmitter and receiver, enables the RXNE interrupt, and enables the USART1 interrupt in the NVIC.
+
+## Ring Buffer and Interrupt Handling
+
+The UART receive driver uses a 64-byte circular buffer.
+
+- The interrupt handler acts as the producer and stores received characters.
+- The main loop acts as the consumer and retrieves characters.
+- `rx_head` tracks where the next character will be stored.
+- `rx_tail` tracks the next character to be read.
+- One buffer slot is reserved to distinguish full from empty, so the usable capacity is **63 characters**.
+- If the buffer becomes full, incoming characters are dropped and a data-loss event is reported.
+- The main loop briefly disables interrupts while accessing shared buffer state.
+
+This design keeps the interrupt handler short and leaves command processing to the main loop.
+
+## Project Structure
+
+```text
+STM32_Sensor_Monitor/
+├── Core/
+│   └── Src/
+│       ├── main.c
+│       ├── clock.c
+│       ├── gpio.c
+│       ├── uart.c
+│       └── command_parser.c
+├── Core/
+│   └── Inc/
+│       ├── clock.h
+│       ├── gpio.h
+│       ├── uart.h
+│       ├── command_parser.h
+│       └── stm32f103_regs.h
+└── README.md
+```
+
+Adjust the directory tree to match the actual repository layout.
+
+## Build and Test
+
+1. Open the project in STM32CubeIDE.
+2. Build the project using the ARM GCC toolchain.
+3. Connect the ST-LINK V2 to the Blue Pill using SWD.
+4. Connect a USB-to-UART adapter to PA9, PA10, and GND.
+5. Open a serial terminal at **9600 baud, 8 data bits, no parity, 1 stop bit (8-N-1)**.
+6. Flash the firmware and reset the board.
+7. Confirm the startup message appears.
+8. Send `LED ON` and `LED OFF` and verify the LED and terminal responses.
+9. Test unknown commands and commands that exceed the parser's capacity.
+
+Hardware testing should be marked complete only after these checks succeed on the physical board.
+
+## Future Improvements
+
+- Implement a TIM2 periodic interrupt.
+- Add ADC support for sensor measurements.
+- Add `HELP` and `STATUS` commands.
+- Expand the firmware into a sensor-monitoring application.
+- Improve peripheral error handling and hardware test coverage.
+
+## Learning Outcomes
+
+This project provides practical experience with:
+
+- Embedded C and bitwise operations.
+- ARM Cortex-M3 and memory-mapped I/O.
+- Clock configuration and peripheral clock gating.
+- GPIO and USART register configuration.
+- Interrupt service routines and NVIC.
+- Circular buffers and shared data between ISR and main code.
+- Modular firmware architecture and command parsing.
+- Hardware debugging with ST-LINK and a serial terminal.
