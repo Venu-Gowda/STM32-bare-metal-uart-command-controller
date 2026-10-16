@@ -1,4 +1,4 @@
-# STM32 UART Command Controller
+# STM32 Bare-Metal UART Command Controller
 
 Bare-metal firmware for the **STM32F103C8T6 Blue Pill**, written in Embedded C without HAL or CubeMX-generated peripheral code. This project uses direct register-level programming to implement UART communication, interrupt-driven reception, a ring buffer, and a command parser to control the onboard LED.
 
