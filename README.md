@@ -37,6 +37,7 @@ Bare-metal firmware for the **STM32F103C8T6 Blue Pill**, written in Embedded C w
 | Additional commands | Planned |
 
 ## System Architecture
+![STM32 UART Command Controller Architecture](docs/uart_command_controller_architecture.png)
 
 ```text
 Computer / Serial Terminal
