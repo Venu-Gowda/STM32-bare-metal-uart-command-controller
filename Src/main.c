@@ -1,31 +1,33 @@
 #include "clock.h"
 #include "gpio.h"
 #include "uart.h"
-#include "delay.h"
+#include <stdint.h>
+#include "command_parser.h"
 
 int main(void)
 {
     char received;
-    uint32_t previous_led_time = 0U;
 
     Clock_Init();
     GPIO_Init();
     UART_Init();
-    SysTick_Init();
+    CommandParser_Init();
 
-    UART_SendString("UART RX Buffer Ready\r\n");
+    UART_SendString("UART Command Parser Ready\r\n");
 
     while (1)
     {
-        if (UART_TryReadChar(&received))
-        {
-            UART_SendChar(received);
-        }
+        uint8_t event = UART_GetNextEvent(&received);
 
-        if ((uint32_t)(millis() - previous_led_time) >= 2000U)
+        if (event == UART_EVENT_DATA_LOSS)
         {
-            previous_led_time = millis();
-            GPIO_Toggle();
+            CommandParser_NotifyDataLoss();
+        }
+        else if (event == UART_EVENT_CHAR)
+        {
+            CommandParser_Update(received);
         }
     }
+
 }
+

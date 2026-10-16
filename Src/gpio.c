@@ -33,13 +33,13 @@ void GPIO_Init(void)
 
 void GPIO_Set(void)
 {
-    GPIOC_ODR |= (1U << LED_PIN);
+    GPIOC_ODR &= ~(1U << LED_PIN);
 }
 
-
+/* Turn the active-low onboard LED OFF */
 void GPIO_Clear(void)
 {
-    GPIOC_ODR &= ~(1U << LED_PIN);
+    GPIOC_ODR |= (1U << LED_PIN);
 }
 
 

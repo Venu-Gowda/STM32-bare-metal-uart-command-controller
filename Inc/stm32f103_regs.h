@@ -66,6 +66,8 @@
 #define NVIC_ISER1 \
     (*(volatile uint32_t *)0xE000E104U)
 
+#define NVIC_ICER1 (*(volatile uint32_t *)0xE000E184U)
+
 /* =========================
    Systick
    ========================= */
