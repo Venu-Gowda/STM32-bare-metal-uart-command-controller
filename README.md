@@ -7,7 +7,7 @@ Bare-metal firmware for the **STM32F103C8T6 Blue Pill**, written in Embedded C w
 **IDE:** STM32CubeIDE  
 **Compiler:** ARM GCC  
 **UART:** USART1, 9600 baud  
-**Development status:** UART command controller implemented; hardware verification in progress.
+**Development status:** UART Command Controller — Implementation and hardware testing completed.
 
 ## Project Goals
 
