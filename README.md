@@ -39,37 +39,6 @@ Bare-metal firmware for the **STM32F103C8T6 Blue Pill**, written in Embedded C w
 ## System Architecture
 ![STM32 UART Architecture](uart_command_controller_architecture.png)
 
-```text
-Computer / Serial Terminal
-          |
-          | UART commands
-          v
-       USART1
-     PA10 RX / PA9 TX
-          |
-          v
-  UART Receive Interrupt
-   USART1_IRQHandler()
-          |
-          v
-    Receive Ring Buffer
-          |
-          v
-        main()
-          |
-          v
-    Command Parser
-          |
-          v
-      GPIO Driver
-          |
-          v
-    Onboard LED (PC13)
-          |
-          v
-   UART Response to PC
-```
-
 The UART interrupt stores incoming characters in the ring buffer. The main loop retrieves them and passes them to the command parser. The parser executes recognized commands and sends responses through UART.
 
 ## Hardware Connections
