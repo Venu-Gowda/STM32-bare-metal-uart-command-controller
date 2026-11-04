@@ -196,7 +196,6 @@ Adjust the directory tree to match the actual repository layout.
 8. Send `LED ON` and `LED OFF` and verify the LED and terminal responses.
 9. Test unknown commands and commands that exceed the parser's capacity.
 
-Hardware testing should be marked complete only after these checks succeed on the physical board.
 
 ## Future Improvements
 
